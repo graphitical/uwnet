@@ -200,12 +200,33 @@ float get_pixel(image im, int x, int y, int c)
     return im.data[x + im.w*(y + im.h*c)];
 }
 
+float get_pixel_padded(image im, int x, int y, int c)
+{
+    if(x >= im.w) return 0;
+    if(y >= im.h) return 0;
+    if(x < 0) return 0;
+    if(y < 0) return 0;
+
+    assert(c >= 0);
+    assert(c < im.c);
+    return im.data[x + im.w*(y + im.h*c)];
+}
+
 void set_pixel(image im, int x, int y, int c, float v)
 {
     assert(c >= 0);
     assert(c < im.c);
     if(x >= 0 && x < im.w && y >= 0 && y < im.h){
         im.data[x + im.w*(y + im.h*c)] = v;
+    }
+}
+
+void add_to_pixel(image im, int x, int y, int c, float v)
+{
+    assert(c >= 0);
+    assert(c < im.c);
+    if (x >= 0 && x < im.w && y >= 0 && y < im.h){
+        im.data[x + im.w*(y + im.h*c)] += v;
     }
 }
 
