@@ -57,9 +57,20 @@ matrix im2col(image im, int size, int stride)
 
     // TODO: 5.1
     // Fill in the column matrix with patches from the image
-
-
-
+    int start = -(size%2);
+    int m, n;
+    int idx = 0;
+    float p;
+    for (k = 0; k < im.c; ++k) {
+        for (i = 0; i < size*size; ++i) {
+            for (j = 0; j < cols; ++j) {
+                m = start + i/size + (j/outw)*stride;
+                n = start + i%size + (j%outw)*stride;
+                col.data[idx++] = get_pixel_padded(im,n,m,k);
+            }
+        }
+    }
+    assert(idx == col.rows * col.cols);
     return col;
 }
 
@@ -74,13 +85,25 @@ image col2im(int width, int height, int channels, matrix col, int size, int stri
 
     image im = make_image(width, height, channels);
     int outw = (im.w-1)/stride + 1;
+    int outh = (im.h-1)/stride + 1;
     int rows = im.c*size*size;
+    int cols = outw * outh;
 
+    int m, n;
+    float p;
+    int start = -(size%2);
     // TODO: 5.2
     // Add values into image im from the column matrix
-    
-
-
+    for (k = 0; k < im.c; ++k) {
+        for (i = 0; i < size*size; ++i) {
+            for (j = 0; j < cols; ++j) {
+                m = start + i/size + (j/outw)*stride;
+                n = start + i%size + (j%outw)*stride;
+                p = col.data[k*size*size*cols + i*cols + j];
+                add_to_pixel(im,n,m,k,p);
+            }
+        }
+    }
     return im;
 }
 
