@@ -32,7 +32,7 @@ matrix forward_maxpool_layer(layer l, matrix in)
     for (d = 0; d < in.rows; ++d) {
         for (k = 0; k < l.channels; ++k) {
             for (c = 0; c < outw*outh; ++c) {
-                v = -INFINITY;
+                v = -1e3;
                 for (i = 0; i < l.size; ++i) {
                     for (j = 0; j < l.size; ++j) {
                         m = ((c*l.stride)/im_w)*l.stride + i + start;
@@ -48,6 +48,7 @@ matrix forward_maxpool_layer(layer l, matrix in)
         }
     }
     assert(idx == out.cols * out.rows);
+    // printf("rows:%d",out.rows);
     return out;
 }
 
@@ -59,12 +60,12 @@ matrix backward_maxpool_layer(layer l, matrix dy)
     matrix in    = *l.x;
     matrix dx = make_matrix(dy.rows, l.width*l.height*l.channels);
 
-    int outw = (l.width-1)/l.stride + 1;
-    int outh = (l.height-1)/l.stride + 1;
+    // int outw = (l.width-1)/l.stride + 1;
+    // int outh = (l.height-1)/l.stride + 1;
     // TODO: 6.2 - find the max values in the input again and fill in the
     // corresponding delta with the delta from the output. This should be
     // similar to the forward method in structure.
-    int d, k, p, i, j, m, n, a, b, r, c;
+    int d, k, i, j, m, n, a, b, r, c;
     int idx = 0;
     float t, v;
     int start = -(l.size%2);
@@ -72,7 +73,7 @@ matrix backward_maxpool_layer(layer l, matrix dy)
         for (k = 0; k < l.channels; ++k) {
             for (i = 0; i < l.height; i=i+l.stride) {
                 for (j = 0; j < l.width; j=j+l.stride) {
-                    v = -INFINITY;
+                    v = -1e3;
                     for (m = start; m < l.size + start; ++m) {
                         for (n = start; n < l.size + start; ++n) {
                             c = j + n;
@@ -97,6 +98,7 @@ matrix backward_maxpool_layer(layer l, matrix dy)
     }
 
     assert(idx == dy.cols * dy.rows);
+    // printf("rows:%d",dy.rows);
     return dx;
 }
 

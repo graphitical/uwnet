@@ -60,7 +60,6 @@ matrix im2col(image im, int size, int stride)
     int start = -(size%2);
     int m, n;
     int idx = 0;
-    float p;
     for (k = 0; k < im.c; ++k) {
         for (i = 0; i < size*size; ++i) {
             for (j = 0; j < cols; ++j) {
@@ -86,12 +85,11 @@ image col2im(int width, int height, int channels, matrix col, int size, int stri
     image im = make_image(width, height, channels);
     int outw = (im.w-1)/stride + 1;
     int outh = (im.h-1)/stride + 1;
-    int rows = im.c*size*size;
     int cols = outw * outh;
 
     int m, n;
-    float p;
     int start = -(size%2);
+    float p = 0.;
     // TODO: 5.2
     // Add values into image im from the column matrix
     for (k = 0; k < im.c; ++k) {
