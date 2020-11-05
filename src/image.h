@@ -15,6 +15,10 @@ typedef struct{
     float *data;
 } image;
 
+// My operations
+float get_pixel_padded(image im, int x, int y, int c);
+void add_to_pixel(image im, int x, int y, int c, float v);
+
 // Basic operations
 float get_pixel(image im, int x, int y, int c);
 void set_pixel(image im, int x, int y, int c, float v);

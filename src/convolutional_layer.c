@@ -57,9 +57,19 @@ matrix im2col(image im, int size, int stride)
 
     // TODO: 5.1
     // Fill in the column matrix with patches from the image
-
-
-
+    int start = -(size%2);
+    int m, n;
+    int idx = 0;
+    for (k = 0; k < im.c; ++k) {
+        for (i = 0; i < size*size; ++i) {
+            for (j = 0; j < cols; ++j) {
+                m = start + i/size + (j/outw)*stride;
+                n = start + i%size + (j%outw)*stride;
+                col.data[idx++] = get_pixel_padded(im,n,m,k);
+            }
+        }
+    }
+    assert(idx == col.rows * col.cols);
     return col;
 }
 
@@ -74,13 +84,24 @@ image col2im(int width, int height, int channels, matrix col, int size, int stri
 
     image im = make_image(width, height, channels);
     int outw = (im.w-1)/stride + 1;
-    int rows = im.c*size*size;
+    int outh = (im.h-1)/stride + 1;
+    int cols = outw * outh;
 
+    int m, n;
+    int start = -(size%2);
+    float p = 0.;
     // TODO: 5.2
     // Add values into image im from the column matrix
-    
-
-
+    for (k = 0; k < im.c; ++k) {
+        for (i = 0; i < size*size; ++i) {
+            for (j = 0; j < cols; ++j) {
+                m = start + i/size + (j/outw)*stride;
+                n = start + i%size + (j%outw)*stride;
+                p = col.data[k*size*size*cols + i*cols + j];
+                add_to_pixel(im,n,m,k,p);
+            }
+        }
+    }
     return im;
 }
 
@@ -174,6 +195,14 @@ matrix backward_convolutional_layer(layer l, matrix dy)
 void update_convolutional_layer(layer l, float rate, float momentum, float decay)
 {
     // TODO: 5.3
+    axpy_matrix(decay, l.w, l.dw);
+    axpy_matrix(-rate, l.dw, l.w);
+    scal_matrix(momentum, l.dw);
+
+    // Do the same for biases as well but no need to use weight decay on biases
+
+    axpy_matrix(-rate, l.db, l.b);
+    scal_matrix(momentum, l.db);
 }
 
 // Make a new convolutional layer

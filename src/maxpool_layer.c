@@ -16,14 +16,37 @@ matrix forward_maxpool_layer(layer l, matrix in)
     free_matrix(*l.x);
     *l.x = copy_matrix(in);
 
-    int outw = (l.width-1)/l.stride + 1;
-    int outh = (l.height-1)/l.stride + 1;
+    int im_w = l.width;
+    int im_h = l.height;
+    int outw = (im_w-1)/l.stride + 1;
+    int outh = (im_h-1)/l.stride + 1;
     matrix out = make_matrix(in.rows, outw*outh*l.channels);
+    
 
     // TODO: 6.1 - iterate over the input and fill in the output with max values
-
-
-
+    int idx = 0;
+    int start = -(l.size%2);
+    int d, k, c, i, j, m, n;
+    float v, t;
+    for (d = 0; d<in.rows; ++d) {
+        for (k = 0; k<l.channels; ++k) {
+            for (c = 0; c<outw*outh; ++c) {
+                v = -FLT_MIN;
+                t = -FLT_MIN;
+                for (i = 0; i<l.size; ++i) {
+                    for (j = 0; j<l.size; ++j) {
+                        m = ((c*l.stride)/im_w)*l.stride + i + start;
+                        n = (c*l.stride)%im_w + j + start;
+                        if (m<0 || n<0 || m>=im_h || n>=im_w) continue;
+                        t = in.data[n + im_w*m + im_w*im_h*k + d*im_w*im_h*l.channels];
+                        if (v < t) v = t;
+                    }
+                }
+                out.data[idx++] = v;
+            }
+        }
+    }
+    assert(idx == out.cols*out.rows);
     return out;
 }
 
@@ -40,9 +63,37 @@ matrix backward_maxpool_layer(layer l, matrix dy)
     // TODO: 6.2 - find the max values in the input again and fill in the
     // corresponding delta with the delta from the output. This should be
     // similar to the forward method in structure.
+    int im_w = l.width;
+    int im_h = l.height;
 
+    int d, k, c, i, j, m, n, a, b;
+    float v, t;
+    int idx = 0;
+    int start = -(l.size%2);
+    for (d = 0; d<in.rows; ++d) {
+        for (k = 0; k<l.channels; ++k) {
+            for (c = 0; c<outw*outh; ++c) {
+                v = -FLT_MIN;
+                t = -FLT_MIN;
+                for (i = 0; i<l.size; ++i) {
+                    for (j = 0; j<l.size; ++j) {
+                        m = ((c*l.stride)/im_w)*l.stride + i + start;
+                        n = (c*l.stride)%im_w + j + start; 
+                        if (m<0 || n<0 || m>=im_h || n>=im_w) continue;
+                        t = in.data[n + im_w*(m + im_h*k) + d*in.cols];
+                        if (v < t) {
+                            v = t;
+                            a = m;
+                            b = n;
+                        }
+                    }
+                }
+                dx.data[b + im_w*(a + im_h*k) + d*in.cols] += dy.data[idx++];
+            }
+        }
+    }
 
-
+    assert(idx == dy.cols*dy.rows);
     return dx;
 }
 
