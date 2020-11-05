@@ -18,7 +18,6 @@ matrix forward_maxpool_layer(layer l, matrix in)
 
     int im_w = l.width;
     int im_h = l.height;
-    // printf("im_w:%d\tim_h:%d\n",im_w,im_h);
     int outw = (im_w-1)/l.stride + 1;
     int outh = (im_h-1)/l.stride + 1;
     matrix out = make_matrix(in.rows, outw*outh*l.channels);
@@ -29,26 +28,25 @@ matrix forward_maxpool_layer(layer l, matrix in)
     int start = -(l.size%2);
     int d, k, c, i, j, m, n;
     float v, t;
-    for (d = 0; d < in.rows; ++d) {
-        for (k = 0; k < l.channels; ++k) {
-            for (c = 0; c < outw*outh; ++c) {
-                v = -1e3;
-                for (i = 0; i < l.size; ++i) {
-                    for (j = 0; j < l.size; ++j) {
+    for (d = 0; d<in.rows; ++d) {
+        for (k = 0; k<l.channels; ++k) {
+            for (c = 0; c<outw*outh; ++c) {
+                v = -FLT_MIN;
+                t = -FLT_MIN;
+                for (i = 0; i<l.size; ++i) {
+                    for (j = 0; j<l.size; ++j) {
                         m = ((c*l.stride)/im_w)*l.stride + i + start;
                         n = (c*l.stride)%im_w + j + start;
-                        if(m < 0) m=0; if (n < 0) n=0;
-                        if(m > im_h) m = im_h; if (n > im_w) n = im_w;
-                        t = in.data[n + im_w*(m + im_h*k)];
-                        if (t > v) v = t;
+                        if (m<0 || n<0 || m>=im_h || n>=im_w) continue;
+                        t = in.data[n + im_w*m + im_w*im_h*k + d*im_w*im_h*l.channels];
+                        if (v < t) v = t;
                     }
                 }
                 out.data[idx++] = v;
             }
         }
     }
-    assert(idx == out.cols * out.rows);
-    // printf("rows:%d",out.rows);
+    assert(idx == out.cols*out.rows);
     return out;
 }
 
@@ -60,45 +58,42 @@ matrix backward_maxpool_layer(layer l, matrix dy)
     matrix in    = *l.x;
     matrix dx = make_matrix(dy.rows, l.width*l.height*l.channels);
 
-    // int outw = (l.width-1)/l.stride + 1;
-    // int outh = (l.height-1)/l.stride + 1;
+    int outw = (l.width-1)/l.stride + 1;
+    int outh = (l.height-1)/l.stride + 1;
     // TODO: 6.2 - find the max values in the input again and fill in the
     // corresponding delta with the delta from the output. This should be
     // similar to the forward method in structure.
-    int d, k, i, j, m, n, a, b, r, c;
+    int im_w = l.width;
+    int im_h = l.height;
+
+    int d, k, c, i, j, m, n, a, b;
+    float v, t;
     int idx = 0;
-    float t, v;
     int start = -(l.size%2);
-    for (d = 0; d < dy.rows; ++d) {
-        for (k = 0; k < l.channels; ++k) {
-            for (i = 0; i < l.height; i=i+l.stride) {
-                for (j = 0; j < l.width; j=j+l.stride) {
-                    v = -1e3;
-                    for (m = start; m < l.size + start; ++m) {
-                        for (n = start; n < l.size + start; ++n) {
-                            c = j + n;
-                            r = i + m;
-                            if (c < 0) c = 0;
-                            if (r < 0) r = 0;
-                            if (c > l.width) c = l.width;
-                            if (r > l.height) r = l.height;
-                            t = in.data[c + l.width*(r + l.height*k)];     
-                            if (t > v) {
-                                v = t;
-                                a = r;
-                                b = c;
-                            }                       
+    for (d = 0; d<in.rows; ++d) {
+        for (k = 0; k<l.channels; ++k) {
+            for (c = 0; c<outw*outh; ++c) {
+                v = -FLT_MIN;
+                t = -FLT_MIN;
+                for (i = 0; i<l.size; ++i) {
+                    for (j = 0; j<l.size; ++j) {
+                        m = ((c*l.stride)/im_w)*l.stride + i + start;
+                        n = (c*l.stride)%im_w + j + start; 
+                        if (m<0 || n<0 || m>=im_h || n>=im_w) continue;
+                        t = in.data[n + im_w*(m + im_h*k) + d*in.cols];
+                        if (v < t) {
+                            v = t;
+                            a = m;
+                            b = n;
                         }
                     }
-
-                    dx.data[b + l.width*(a + l.height*k)] += dy.data[idx++];
                 }
+                dx.data[b + im_w*(a + im_h*k) + d*in.cols] += dy.data[idx++];
             }
         }
     }
 
-    assert(idx == dy.cols * dy.rows);
-    // printf("rows:%d",dy.rows);
+    assert(idx == dy.cols*dy.rows);
     return dx;
 }
 

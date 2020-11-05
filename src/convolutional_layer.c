@@ -199,9 +199,10 @@ void update_convolutional_layer(layer l, float rate, float momentum, float decay
     axpy_matrix(-rate, l.dw, l.w);
     scal_matrix(momentum, l.dw);
 
+    // Do the same for biases as well but no need to use weight decay on biases
+
     axpy_matrix(-rate, l.db, l.b);
     scal_matrix(momentum, l.db);
-
 }
 
 // Make a new convolutional layer
